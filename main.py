@@ -4,6 +4,8 @@ import os
 import math
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
+from PyQt5.Qt import Qt
+SCREEN_SIZE = [600, 450]
 
 
 class Example(QWidget):
@@ -12,6 +14,7 @@ class Example(QWidget):
         self.initUI()
 
     def initUI(self):
+        self.zoom = 10  # Мастштаб
         self.setGeometry(300, 300, 700, 700)
         self.setWindowTitle('Панель управления')
 
@@ -49,7 +52,7 @@ class Example(QWidget):
             self.getImage(cor_x, cor_y)
         except:
             pass
-    
+
     def getImage(self, cor_x, cor_y):
         map_request = "http://static-maps.yandex.ru/1.x/?ll=" + str(cor_x) + ',' + str(cor_y) + "&spn=20,20&l=sat"
         response = requests.get(map_request)
@@ -59,8 +62,14 @@ class Example(QWidget):
         self.pix = QPixmap('map.png')
         self.pix = self.pix.scaled(500, 500)
         self.res_map.setPixmap(self.pix)
-        
-    
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_PageDown:
+            pass
+        if event.key() == Qt.Key_PageUp:
+            pass
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Example()
