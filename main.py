@@ -6,6 +6,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.Qt import *
+
 SCREEN_SIZE = [600, 450]
 
 
@@ -15,6 +16,8 @@ class Example(QWidget):
         self.initUI()
 
     def initUI(self):
+        self.metki = 1
+        self.metka = '&pt='
         self.x = 100  # Координаты центра карты на старте
         self.y = 100  # Координаты центра карты на старте
         self.zoom = 10  # Мастштаб
@@ -49,6 +52,31 @@ class Example(QWidget):
         self.btn.move(50, 600)
         self.btn.clicked.connect(self.clic)
 
+        self.btn_2 = QPushButton('V', self)
+        self.btn_2.resize(250, 50)
+        self.btn_2.move(600, 75)
+        self.btn_2.clicked.connect(self.find)
+
+        self.out4 = QLineEdit(self)
+        self.out4.resize(115, 30)
+        self.out4.move(600, 150)
+        self.out4.setPlaceholderText('Координата 1')
+
+        self.out5 = QLineEdit(self)
+        self.out5.resize(115, 30)
+        self.out5.move(730, 150)
+        self.out5.setPlaceholderText('Координата 2')
+
+        self.out3 = QLineEdit(self)
+        self.out3.resize(250, 30)
+        self.out3.move(600, 25)
+        self.out3.setPlaceholderText('Поиск по названию')
+
+        self.btn_3 = QPushButton('Сброс точек', self)
+        self.btn_3.resize(250, 50)
+        self.btn_3.move(600, 200)
+        self.btn_3.clicked.connect(self.del_point)
+
     def to_ll(self):
         return "{0},{1}".format(self.x, self.y)
 
@@ -72,6 +100,8 @@ class Example(QWidget):
         map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.to_ll(),
                                                                                         z=self.zoom,
                                                                                         type=self.type_map)
+        if len(self.metka) > 4:
+            map_request += self.metka
         response = requests.get(map_request)
         self.map_file = "map.png"
         with open(self.map_file, "wb") as file:
@@ -106,6 +136,28 @@ class Example(QWidget):
             self.x -= 360
         if self.y < -180:
             self.y += 360
+
+    def find(self):
+        text = '+'.join(str(self.out3.text()).split())
+        geocoder_requests = "http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode=" + text + "&format=json"
+        response = requests.get(geocoder_requests)
+        if response:
+            json_response = response.json()
+            self.out4.setText((json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
+                'Point']['pos']).split()[0])
+            self.out5.setText((json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
+                'Point']['pos']).split()[1])
+            tt = '~' + str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
+            if len(self.metka) > 4:
+                self.metka += '~' + str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
+            else:
+                self.metka += str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
+            self.metki += 1
+
+    def del_point(self):
+        self.metki = 1
+        self.metka = '&pt='
+        self.clic2()
 
 
 def except_hook(cls, exception, traceback):
