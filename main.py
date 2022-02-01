@@ -15,6 +15,7 @@ class Example(QWidget):
 
     def initUI(self):
         self.zoom = 10  # Мастштаб
+        self.spn = 20
         self.setGeometry(300, 300, 700, 700)
         self.setWindowTitle('Панель управления')
 
@@ -54,7 +55,7 @@ class Example(QWidget):
             pass
 
     def getImage(self, cor_x, cor_y):
-        map_request = "http://static-maps.yandex.ru/1.x/?ll=" + str(cor_x) + ',' + str(cor_y) + "&spn=20,20&l=sat"
+        map_request = "http://static-maps.yandex.ru/1.x/?ll=" + str(cor_x) + ',' + str(cor_y) + "&spn=" + str(self.spn) + "," + str(self.spn) + "&l=sat"
         response = requests.get(map_request)
         self.map_file = "map.png"
         with open(self.map_file, "wb") as file:
@@ -68,6 +69,22 @@ class Example(QWidget):
             pass
         if event.key() == Qt.Key_PageUp:
             pass
+        if event.key() == Qt.Key_W:
+            give2 = float(self.out2.text())
+            self.out2.setText(str(give2 + self.spn))
+            self.clic()
+        if event.key() == Qt.Key_S:
+            give2 = float(self.out2.text())
+            self.out2.setText(str(give2 - self.spn))
+            self.clic()
+        if event.key() == Qt.Key_D:
+            give1 = float(self.out1.text())
+            self.out1.setText(str(give1 + self.spn))
+            self.clic()
+        if event.key() == Qt.Key_A:
+            give1 = float(self.out1.text())
+            self.out1.setText(str(give1 - self.spn))
+            self.clic()
 
 
 if __name__ == '__main__':
