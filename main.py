@@ -54,7 +54,6 @@ class Image(QWidget):
 class Example(QWidget):
     def __init__(self):
         super().__init__()
-        self.a = 0
         self.initUI()
 
     def initUI(self):
@@ -79,6 +78,10 @@ class Example(QWidget):
         self.txt2.setText('координата 2:')
         self.txt2.move(325, 5)
 
+        self.res_map = QLabel(self)
+        self.res_map.resize(500, 500)
+        self.res_map.move(50, 60)
+
         self.btn = QPushButton('-->', self)
         self.btn.resize(550, 50)
         self.btn.move(50, 600)
@@ -88,9 +91,19 @@ class Example(QWidget):
         try:
             cor_x = float(self.out1.text())
             cor_y = float(self.out2.text())
-            im.get_coor(cor_x, cor_y)
+            self.getImage(cor_x, cor_y)
         except:
             pass
+    
+    def getImage(self, cor_x, cor_y):
+        map_request = "http://static-maps.yandex.ru/1.x/?ll=" + str(cor_x) + ',' + str(cor_y) + "&spn=20,20&l=sat"
+        response = requests.get(map_request)
+        self.map_file = "map.png"
+        with open(self.map_file, "wb") as file:
+            file.write(response.content)
+        self.pix = QPixmap('map.png')
+        self.pix = self.pix.scaled(500, 500)
+        self.res_map.setPixmap(self.pix)
         
     
 if __name__ == '__main__':
