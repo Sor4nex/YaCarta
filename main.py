@@ -14,8 +14,11 @@ class Example(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.zoom = 10  # Мастштаб
+        self.x = 100  # Координаты центра карты на старте
+        self.y = 100  # Координаты центра карты на стартe
+        self.zoom = 15  # Мастштаб
         self.spn = 20
+        self.type_map = 'map'  # Тип карты
         self.setGeometry(300, 300, 700, 700)
         self.setWindowTitle('Панель управления')
 
@@ -55,7 +58,11 @@ class Example(QWidget):
             pass
 
     def getImage(self, cor_x, cor_y):
-        map_request = "http://static-maps.yandex.ru/1.x/?ll=" + str(cor_x) + ',' + str(cor_y) + "&spn=" + str(self.spn) + "," + str(self.spn) + "&l=sat"
+        self.x = cor_x
+        self.y = cor_y
+        map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.to_ll(),
+                                                                                        z=self.zoom,
+                                                                                        type=self.type_map)
         response = requests.get(map_request)
         self.map_file = "map.png"
         with open(self.map_file, "wb") as file:
@@ -64,31 +71,35 @@ class Example(QWidget):
         self.pix = self.pix.scaled(500, 500)
         self.res_map.setPixmap(self.pix)
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_PageDown:
-            pass
-        if event.key() == Qt.Key_PageUp:
-            pass
-        if event.key() == Qt.Key_W:
-            give2 = float(self.out2.text())
-            self.out2.setText(str(give2 + self.spn))
+        def keyPressEvent(self, event):
+        if event.key() == Qt.Key_PageUp and self.zoom < 16:
+            self.zoom += 1
             self.clic()
-        if event.key() == Qt.Key_S:
-            give2 = float(self.out2.text())
-            self.out2.setText(str(give2 - self.spn))
+        elif event.key() == Qt.Key_PageDown and self.zoom > 1:
+            self.zoom -= 1
             self.clic()
-        if event.key() == Qt.Key_D:
-            give1 = float(self.out1.text())
-            self.out1.setText(str(give1 + self.spn))
+        elif event.key() == Qt.Key_A:
+            self.x -= 0.005 * 2 ** (16 - self.zoom)
             self.clic()
-        if event.key() == Qt.Key_A:
-            give1 = float(self.out1.text())
-            self.out1.setText(str(give1 - self.spn))
+        elif event.key() == Qt.Key_D:
+            self.x += 0.005 * 2 ** (16 - self.zoom)
             self.clic()
+        elif event.key() == Qt.Key_W and self.y < 90:
+            self.y += 0.005 * 2 ** (16 - self.zoom)
+            self.clic()
+        elif event.key() == Qt.Key_S and self.y > -90:
+            self.y -= 0.005 * 2 ** (16 - self.zoom)
+            self.clic()
+
+        if self.x > 180:
+            self.x -= 360
+        if self.y < -180:
+            self.y += 360
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Example()
     ex.show()
+    sys.excepthook = except_hook
     sys.exit(app.exec())
