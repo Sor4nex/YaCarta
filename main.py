@@ -18,6 +18,7 @@ class Example(QWidget):
     def initUI(self):
         self.metki = 1
         self.metka = '&pt='
+        self.postal = False
         self.x = 100  # Координаты центра карты на старте
         self.y = 100  # Координаты центра карты на старте
         self.zoom = 10  # Мастштаб
@@ -106,7 +107,7 @@ class Example(QWidget):
 
     def type_changed(self):
         self.type_map = self.sender().text()
-        self.clic()
+        self.clic2()
 
     def clic(self):
         try:
@@ -157,6 +158,8 @@ class Example(QWidget):
         if (event.key() == Qt.Key_S) and self.y > -90:
             self.y -= 0.005 * 2 ** (15 - self.zoom)
             self.clic2()
+        if event.key() == Qt.Key_HomePage:
+            self.postal = not self.postal
 
         if self.x > 180:
             self.x -= 360
@@ -179,9 +182,15 @@ class Example(QWidget):
             else:
                 self.metka += str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
             self.metki += 1
-            self.adress.setText(json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"])
+            txt = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["metaDataProperty"][
+                "GeocoderMetaData"]["text"]
+            if not self.postal:
+                self.adress.setText(txt)
+            else:
+                self.adress.setText(txt +
+                                    json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
+                                        "metaDataProperty"]["GeocoderMetaData"]["Address"].get("postal_code"))
         self.clic2()
-            
 
     def del_point(self):
         self.metki = 1
@@ -201,3 +210,4 @@ if __name__ == '__main__':
     ex.show()
     sys.excepthook = except_hook
     sys.exit(app.exec())
+
