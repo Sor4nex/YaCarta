@@ -3,7 +3,7 @@ import sys
 import os
 import math
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QComboBox
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.Qt import *
 
@@ -22,8 +22,26 @@ class Example(QWidget):
         self.y = 100  # Координаты центра карты на старте
         self.zoom = 10  # Мастштаб
         self.type_map = 'map'  # Тип карты
-        self.setGeometry(300, 300, 700, 700)
+        self.setGeometry(300, 300, 900, 700)
         self.setWindowTitle('Панель управления')
+
+        self.ch_type1 = QPushButton(self)
+        self.ch_type1.setText('map')
+        self.ch_type1.resize(100, 30)
+        self.ch_type1.move(600, 360)
+        self.ch_type1.clicked.connect(self.type_changed)
+
+        self.ch_type2 = QPushButton(self)
+        self.ch_type2.setText('sat')
+        self.ch_type2.resize(100, 30)
+        self.ch_type2.move(600, 390)
+        self.ch_type2.clicked.connect(self.type_changed)
+
+        self.ch_type3 = QPushButton(self)
+        self.ch_type3.setText('sat,skl')
+        self.ch_type3.resize(100, 30)
+        self.ch_type3.move(600, 420)
+        self.ch_type3.clicked.connect(self.type_changed)
 
         self.out1 = QLineEdit(self)
         self.out1.resize(250, 30)
@@ -80,6 +98,11 @@ class Example(QWidget):
     def to_ll(self):
         return "{0},{1}".format(self.x, self.y)
 
+    def type_changed(self):
+        print(self.sender().text())
+        self.type_map = self.sender().text()
+        self.clic()
+
     def clic(self):
         try:
             cor_x = float(self.out1.text())
@@ -111,26 +134,24 @@ class Example(QWidget):
         self.res_map.setPixmap(self.pix)
 
     def keyPressEvent(self, event):
-        print(event.key())
         if event.key() == Qt.Key_PageUp and self.zoom < 16:
             self.zoom += 1
             self.clic2()
-        elif event.key() == Qt.Key_PageDown and self.zoom > 2:
+        if event.key() == Qt.Key_PageDown and self.zoom > 2:
             self.zoom -= 1
             self.clic2()
-        elif event.key() == Qt.Key_A:
+        if event.key() == Qt.Key_A:
             self.x -= 0.005 * 2 ** (15 - self.zoom)
             self.clic2()
-        elif event.key() == Qt.Key_D:
+        if event.key() == Qt.Key_D:
             self.x += 0.005 * 2 ** (15 - self.zoom)
             self.clic2()
-        elif event.key() == Qt.Key_W and self.y < 90:
+        if (event.key() == Qt.Key_W) and self.y < 90:
             self.y += 0.005 * 2 ** (15 - self.zoom)
             self.clic2()
-        elif event.key() == Qt.Key_S and self.y > -90:
+        if (event.key() == Qt.Key_S) and self.y > -90:
             self.y -= 0.005 * 2 ** (15 - self.zoom)
             self.clic2()
-        print(self.x, self.y)
 
         if self.x > 180:
             self.x -= 360
@@ -153,6 +174,8 @@ class Example(QWidget):
             else:
                 self.metka += str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
             self.metki += 1
+        self.clic2()
+            
 
     def del_point(self):
         self.metki = 1
