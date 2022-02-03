@@ -3,7 +3,7 @@ import sys
 import os
 import math
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QComboBox
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QCheckBox
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.Qt import *
 
@@ -25,6 +25,14 @@ class Example(QWidget):
         self.type_map = 'map'  # Тип карты
         self.setGeometry(300, 300, 900, 700)
         self.setWindowTitle('Панель управления')
+
+        self.post = QCheckBox(self)
+        self.post.move(600, 330)
+        self.post.stateChanged.connect(self.post_ch)
+
+        self.post_txt = QLabel(self)
+        self.post_txt.setText('Индекс')
+        self.post_txt.move(620, 330)
 
         self.ch_type1 = QPushButton(self)
         self.ch_type1.setText('map')
@@ -187,10 +195,17 @@ class Example(QWidget):
             if not self.postal:
                 self.adress.setText(txt)
             else:
-                self.adress.setText(txt +
+                self.adress.setText(txt + ", " +
                                     json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
                                         "metaDataProperty"]["GeocoderMetaData"]["Address"].get("postal_code"))
         self.clic2()
+    
+    def post_ch(self):
+        if (self.postal):
+            self.postal = False
+        else:
+            self.postal = True
+        self.find()
 
     def del_point(self):
         self.metki = 1
