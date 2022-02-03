@@ -53,6 +53,12 @@ class Example(QWidget):
         self.out2.move(325, 25)
         self.out2.setPlaceholderText('Координата 2')
 
+        self.adress = QLineEdit(self)
+        self.adress.resize(300, 30)
+        self.adress.move(600, 275)
+        self.adress.setPlaceholderText('Адрес объекта')
+        self.adress.setReadOnly(True)
+
         self.txt1 = QLabel(self)
         self.txt1.setText('координата 1:')
         self.txt1.move(50, 5)
@@ -99,7 +105,6 @@ class Example(QWidget):
         return "{0},{1}".format(self.x, self.y)
 
     def type_changed(self):
-        print(self.sender().text())
         self.type_map = self.sender().text()
         self.clic()
 
@@ -174,12 +179,15 @@ class Example(QWidget):
             else:
                 self.metka += str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
             self.metki += 1
+            self.adress.setText(json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["metaDataProperty"]["GeocoderMetaData"]["text"])
         self.clic2()
             
 
     def del_point(self):
         self.metki = 1
         self.metka = '&pt='
+        self.adress.setText('')
+        self.adress.setPlaceholderText('Адрес объекта')
         self.clic2()
 
 
