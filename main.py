@@ -1,228 +1,198 @@
+import pygame
 import requests
 import sys
 import os
 import math
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QCheckBox
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.Qt import *
-
-SCREEN_SIZE = [600, 450]
 
 
-class Example(QWidget):
+LAT_STEP = 0.008
+LON_STEP = 0.002
+coord_to_geo_x = 0.0000428
+coord_to_geo_y = 0.0000428
+
+
+def ll(x, y):
+    return "{0},{1}".format(x, y)
+
+
+class SearchResult(object):
+    def __init__(self, point, address, postal_code=None):
+        self.point = point
+        self.address = address
+        self.postal_code = postal_code
+
+class MapParams(object):
     def __init__(self):
-        super().__init__()
-        self.initUI()
+        self.lat = 55.729738
+        self.lon = 37.664777
+        self.zoom = 15
+        self.type = "map"
 
-    def initUI(self):
-        self.metki = 1
-        self.metka = '&pt='
-        self.postal = False
-        self.x = 100  # Координаты центра карты на старте
-        self.y = 100  # Координаты центра карты на старте
-        self.zoom = 10  # Мастштаб
-        self.type_map = 'map'  # Тип карты
-        self.setGeometry(300, 300, 900, 700)
-        self.setWindowTitle('Панель управления')
+        self.search_result = None
+        self.use_postal_code = False
 
-        self.post = QCheckBox(self)
-        self.post.move(600, 330)
-        self.post.stateChanged.connect(self.post_ch)
 
-        self.post_txt = QLabel(self)
-        self.post_txt.setText('Индекс')
-        self.post_txt.move(620, 330)
+    def ll(self):
+        return ll(self.lon, self.lat)
 
-        self.ch_type1 = QPushButton(self)
-        self.ch_type1.setText('map')
-        self.ch_type1.resize(100, 30)
-        self.ch_type1.move(600, 360)
-        self.ch_type1.clicked.connect(self.type_changed)
-
-        self.ch_type2 = QPushButton(self)
-        self.ch_type2.setText('sat')
-        self.ch_type2.resize(100, 30)
-        self.ch_type2.move(600, 390)
-        self.ch_type2.clicked.connect(self.type_changed)
-
-        self.ch_type3 = QPushButton(self)
-        self.ch_type3.setText('sat,skl')
-        self.ch_type3.resize(100, 30)
-        self.ch_type3.move(600, 420)
-        self.ch_type3.clicked.connect(self.type_changed)
-
-        self.out1 = QLineEdit(self)
-        self.out1.resize(250, 30)
-        self.out1.move(50, 25)
-        self.out1.setPlaceholderText('Координата 1')
-
-        self.out2 = QLineEdit(self)
-        self.out2.resize(250, 30)
-        self.out2.move(325, 25)
-        self.out2.setPlaceholderText('Координата 2')
-
-        self.adress = QLineEdit(self)
-        self.adress.resize(300, 30)
-        self.adress.move(600, 275)
-        self.adress.setPlaceholderText('Адрес объекта')
-        self.adress.setReadOnly(True)
-
-        self.txt1 = QLabel(self)
-        self.txt1.setText('координата 1:')
-        self.txt1.move(50, 5)
-
-        self.txt2 = QLabel(self)
-        self.txt2.setText('координата 2:')
-        self.txt2.move(325, 5)
-
-        self.res_map = QLabel(self)
-        self.res_map.resize(500, 500)
-        self.res_map.move(50, 60)
-
-        self.btn = QPushButton('-->', self)
-        self.btn.resize(550, 50)
-        self.btn.move(50, 600)
-        self.btn.clicked.connect(self.clic)
-
-        self.btn_2 = QPushButton('V', self)
-        self.btn_2.resize(250, 50)
-        self.btn_2.move(600, 75)
-        self.btn_2.clicked.connect(self.find)
-
-        self.out4 = QLineEdit(self)
-        self.out4.resize(115, 30)
-        self.out4.move(600, 150)
-        self.out4.setPlaceholderText('Координата 1')
-
-        self.out5 = QLineEdit(self)
-        self.out5.resize(115, 30)
-        self.out5.move(730, 150)
-        self.out5.setPlaceholderText('Координата 2')
-
-        self.out3 = QLineEdit(self)
-        self.out3.resize(250, 30)
-        self.out3.move(600, 25)
-        self.out3.setPlaceholderText('Поиск по названию')
-
-        self.btn_3 = QPushButton('Сброс точек', self)
-        self.btn_3.resize(250, 50)
-        self.btn_3.move(600, 200)
-        self.btn_3.clicked.connect(self.del_point)
-
-    def to_ll(self):
-        return "{0},{1}".format(self.x, self.y)
-
-    def type_changed(self):
-        self.type_map = self.sender().text()
-        self.clic2()
-
-    def clic(self):
-        try:
-            cor_x = float(self.out1.text())
-            cor_y = float(self.out2.text())
-            self.getImage(cor_x, cor_y)
-        except:
-            pass
-
-    def clic2(self):
-        try:
-            self.getImage(self.x, self.y)
-        except:
-            pass
-
-    def getImage(self, cor_x, cor_y):
-        self.x = cor_x
-        self.y = cor_y
-        map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=self.to_ll(),
-                                                                                        z=self.zoom,
-                                                                                        type=self.type_map)
-        if len(self.metka) > 4:
-            map_request += self.metka
-        response = requests.get(map_request)
-        self.map_file = "map.png"
-        with open(self.map_file, "wb") as file:
-            file.write(response.content)
-        self.pix = QPixmap('map.png')
-        self.pix = self.pix.scaled(500, 500)
-        self.res_map.setPixmap(self.pix)
-
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_PageUp and self.zoom < 16:
-            self.zoom += 1
-            self.clic2()
-        if event.key() == Qt.Key_PageDown and self.zoom > 2:
-            self.zoom -= 1
-            self.clic2()
-        if event.key() == Qt.Key_A:
-            self.x -= 0.005 * 2 ** (15 - self.zoom)
-            self.clic2()
-        if event.key() == Qt.Key_D:
-            self.x += 0.005 * 2 ** (15 - self.zoom)
-            self.clic2()
-        if (event.key() == Qt.Key_W) and self.y < 90:
-            self.y += 0.005 * 2 ** (15 - self.zoom)
-            self.clic2()
-        if (event.key() == Qt.Key_S) and self.y > -90:
-            self.y -= 0.005 * 2 ** (15 - self.zoom)
-            self.clic2()
-        if event.key() == Qt.Key_HomePage:
-            self.postal = not self.postal
-
-        if self.x > 180:
-            self.x -= 360
-        if self.y < -180:
-            self.y += 360
-
-    def find(self):
-        text = '+'.join(str(self.out3.text()).split())
-        geocoder_requests = "http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode=" + text + "&format=json"
-        response = requests.get(geocoder_requests)
-        if response:
-            json_response = response.json()
-            self.out4.setText((json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
-                'Point']['pos']).split()[0])
-            self.out5.setText((json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
-                'Point']['pos']).split()[1])
-            tt = '~' + str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
-            if len(self.metka) > 4:
-                self.metka += '~' + str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
-            else:
-                self.metka += str(self.out4.text()) + ',' + str(self.out5.text()) + ',pmrdm' + str(self.metki)
-            self.metki += 1
-            txt = json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["metaDataProperty"][
-                "GeocoderMetaData"]["text"]
-            if not self.postal:
-                self.adress.setText(txt)
-            else:
-                self.adress.setText(txt + ", " +
-                                    json_response["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"][
-                                        "metaDataProperty"]["GeocoderMetaData"]["Address"].get("postal_code"))
-        self.clic2()
     
-    def post_ch(self):
-        if (self.postal):
-            self.postal = False
+    def update(self, event):
+        if event.key == pygame.K_PAGEUP  and self.zoom < 19:
+            self.zoom += 1
+        elif event.key == pygame.K_PAGEDOWN  and self.zoom > 2:
+            self.zoom -= 1
+        elif event.key == pygame.K_LEFT:
+            self.lon -= LON_STEP * math.pow(2, 15 - self.zoom)
+        elif event.key == pygame.K_RIGHT:
+            self.lon += LON_STEP * math.pow(2, 15 - self.zoom)
+        elif event.key == pygame.K_UP and self.lat < 85:
+            self.lat += LAT_STEP * math.pow(2, 15 - self.zoom)
+        elif event.key == pygame.K_DOWN and self.lat > -85:
+            self.lat -= LAT_STEP * math.pow(2, 15 - self.zoom)
+        elif event.key == pygame.K_1:
+            self.type = "map"
+        elif event.key == pygame.K_2:
+            self.type = "sat"
+        elif event.key == pygame.K_3:
+            self.type = "sat,skl"
+        elif event.key == pygame.K_DELETE:
+            self.search_result = None
+        elif event.key == pygame.K_INSERT:
+            self.use_postal_code = not self.use_postal_code
+        if self.lon > 180: self.lon -= 360
+        if self.lon < -180: self.lon += 360
+    def screen_to_geo(self, pos):
+        dy = 225 - pos[1]
+        dx = pos[0] - 300
+        lx = self.lon + dx * coord_to_geo_x * math.pow(2, 15 - self.zoom)
+        ly = self.lat + dy * coord_to_geo_y * math.cos(math.radians(self.lat)) * math.pow(2, 15 - self.zoom)
+        return lx, ly
+    def add_reverse_toponym_search(self, pos):
+        point = self.screen_to_geo(pos)
+        toponym = reverse_geocode(ll(point[0], point[1]))
+        self.search_result = SearchResult(
+            point,
+            toponym["metaDataProperty"]["GeocoderMetaData"]["text"] if toponym else None,
+            toponym["metaDataProperty"]["GeocoderMetaData"]["Address"].get(
+                "postal_code") if toponym else None)
+    def add_reverse_org_search(self, pos):
+        self.search_result = None
+        point = self.screen_to_geo(pos)
+        org = find_business(ll(point[0], point[1]))
+        if not org:
+            return
+        org_point = org["geometry"]["coordinates"]
+        org_lon = float(org_point[0])
+        org_lat = float(org_point[1])
+        if lonlat_distance((org_lon, org_lat), point) <= 50:
+            self.search_result = SearchResult(point, org["properties"]["CompanyMetaData"]["name"])
+
+
+def load_map(mp):
+    map_request = "http://static-maps.yandex.ru/1.x/?ll={ll}&z={z}&l={type}".format(ll=mp.ll(), z=mp.zoom, type=mp.type)
+    if mp.search_result:
+        map_request += "&pt={0},{1},pm2grm".format(mp.search_result.point[0], mp.search_result.point[1])
+    response = requests.get(map_request)
+    if not response:
+        print("Ошибка выполнения запроса:")
+        print(map_request)
+        print("Http статус:", response.status_code, "(", response.reason, ")")
+        sys.exit(1)
+    map_file = "map.png"
+    try:
+        with open(map_file, "wb") as file:
+            file.write(response.content)
+    except IOError as ex:
+        print("Ошибка записи временного файла:", ex)
+        sys.exit(2)
+
+    return map_file
+
+
+def render_text(text):
+    font = pygame.font.Font(None, 30)
+    return font.render(text, 1, (100, 0, 100))
+
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((600, 450))
+    mp = MapParams()
+
+    while True:
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:
+            break
+        elif event.type == pygame.KEYUP:
+            mp.update(event)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                mp.add_reverse_toponym_search(event.pos)
+            elif event.button == 3:
+                mp.add_reverse_org_search(event.pos)
         else:
-            self.postal = True
-        self.find()
+            continue
+        map_file = load_map(mp)
+        screen.blit(pygame.image.load(map_file), (0, 0))
+        if mp.search_result:
+            if mp.use_postal_code and mp.search_result.postal_code:
+                text = render_text(mp.search_result.postal_code + ", " + mp.search_result.address)
+            else:
+                text = render_text(mp.search_result.address)
+            screen.blit(text, (20, 400))
+        pygame.display.flip()
+    pygame.quit()
+    os.remove(map_file)
 
-    def del_point(self):
-        self.metki = 1
-        self.metka = '&pt='
-        self.adress.setText('')
-        self.adress.setPlaceholderText('Адрес объекта')
-        self.clic2()
+def find_business(ll):
+    search_api_server = "https://search-maps.yandex.ru/v1/"
+    api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
+    search_params = {
+        "apikey": api_key,
+        "lang": "ru_RU",
+        "ll": ll,
+        "spn": "0.001,0.001",
+        "type": "biz",
+        "text": ll,
+    }
+
+    response = requests.get(search_api_server, params=search_params)
+    if not response:
+        raise RuntimeError(
+            """Ошибка выполнения запроса:
+            {request}
+            Http статус: {status} ({reason})""".format(
+                request=search_api_server, status=response.status_code, reason=response.reason))
+    json_response = response.json()
+    organizations = json_response["features"]
+    return organizations[0] if organizations else None
+
+def lonlat_distance(a, b):
+    degree_to_meters_factor = 111 * 1000
+    a_lon, a_lat = a
+    b_lon, b_lat = b
+    radians_lattitude = math.radians((a_lat + b_lat) / 2.)
+    lat_lon_factor = math.cos(radians_lattitude)
+    dx = abs(a_lon - b_lon) * degree_to_meters_factor * lat_lon_factor
+    dy = abs(a_lat - b_lat) * degree_to_meters_factor
+    distance = math.sqrt(dx * dx + dy * dy)
+    return distance
+
+def reverse_geocode(ll):
+    geocoder_request_template = "http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode={ll}&format=json"
+    geocoder_request = geocoder_request_template.format(**locals())
+    response = requests.get(geocoder_request)
+
+    if not response:
+        raise RuntimeError(
+            """Ошибка выполнения запроса:
+            {request}
+            Http статус: {status} ({reason})""".format(
+                request=geocoder_request, status=response.status_code, reason=response.reason))
+    json_response = response.json()
+    features = json_response["response"]["GeoObjectCollection"]["featureMember"]
+    return features[0]["GeoObject"] if features else None
 
 
-def except_hook(cls, exception, traceback):
-    sys.__excepthook__(cls, exception, traceback)
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = Example()
-    ex.show()
-    sys.excepthook = except_hook
-    sys.exit(app.exec())
-
+if __name__ == "__main__":
+    main()
